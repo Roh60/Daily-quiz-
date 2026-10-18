@@ -1,0 +1,6 @@
+{
+  "name": "GK Swal",
+  "description": "GK Book Library, practice quizzes, and social text and poll feed for Lucent, Arihant, and Drishti IAS resources.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

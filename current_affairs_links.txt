@@ -1,0 +1,14 @@
+GK Swal — official Current Affairs source directory
+
+This directory is intended for user-initiated reading from official sources. It is not a substitute for a dated, in-app current-affairs feed. Each link should be checked before release.
+
+Press Information Bureau (PIB): https://pib.gov.in/
+Reserve Bank of India (RBI): https://www.rbi.org.in/
+ISRO: https://www.isro.gov.in/
+PRS Legislative Research: https://prsindia.org/
+Election Commission of India: https://www.eci.gov.in/
+Ministry of External Affairs: https://www.mea.gov.in/
+Ministry of Finance: https://www.finmin.nic.in/
+Supreme Court of India: https://www.sci.gov.in/
+
+Do not scrape or republish third-party copyrighted articles without permission. For an in-app feed, add a permitted RSS/API provider, display the publication date and source, and handle failures/offline state.

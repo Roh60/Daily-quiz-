@@ -1,0 +1,35 @@
+{
+  "target_total": 10000,
+  "existing_database_questions": 4800,
+  "new_non_currency_revision_entries": 3197,
+  "global_currency_asset_questions": 2003,
+  "database_total_after_expansion": 7997,
+  "category_additions": {
+    "History": 291,
+    "Indian Polity": 291,
+    "Geography": 291,
+    "General Science": 291,
+    "Indian Economy": 291,
+    "Static GK": 291,
+    "Sports": 291,
+    "Entertainment": 290,
+    "Kids": 290,
+    "Current Affairs": 290,
+    "Facts": 290
+  },
+  "category_database_totals": {
+    "Currency": 400,
+    "Current Affairs": 690,
+    "Entertainment": 690,
+    "Facts": 690,
+    "General Science": 691,
+    "Geography": 691,
+    "History": 691,
+    "Indian Economy": 691,
+    "Indian Polity": 691,
+    "Kids": 690,
+    "Sports": 691,
+    "Static GK": 691
+  },
+  "important_note": "The 3,197 expansion entries are alternate-wording/revision variants derived from existing category questions, not 3,197 independently new facts. All need editorial fact-checking. The 2,003 currency bank is separately loaded from assets."
+}

@@ -1,0 +1,67 @@
+name: Publish GK Swal legal pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: gk-swal-legal-pages
+  cancel-in-progress: true
+
+jobs:
+  validate-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Refuse to publish unfinished legal pages
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          files = [Path('legal/privacy-policy-template.html'), Path('legal/delete-account.html')]
+          problems = []
+          for path in files:
+              if not path.is_file():
+                  problems.append(f'Missing {path}')
+                  continue
+              text = path.read_text(encoding='utf-8')
+              if re.search(r'\[(?:ADD|REPLACE|INSERT)[^\]]*\]|example\.com|support@example\.com', text, re.I):
+                  problems.append(f'{path} still contains placeholders')
+              if 'Developer setup required before publication' in text:
+                  problems.append(f'{path} still contains draft-only warning text')
+          if problems:
+              print('Legal pages were NOT published:')
+              print('\n'.join(f'- {problem}' for problem in problems))
+              raise SystemExit(1)
+          print('Legal page placeholder check passed.')
+          PY
+      - name: Prepare public pages
+        run: |
+          mkdir -p _site
+          python - <<'PY'
+          from pathlib import Path
+          privacy = Path('legal/privacy-policy-template.html').read_text(encoding='utf-8')
+          privacy = privacy.replace('<p><small>Publication draft — verify every statement against the final production build, fill the developer contact details, and publish at a stable public HTTPS URL before Google Play submission.</small></p>', '<p><small>This policy describes the GK Swal app. Last updated 18 October 2026.</small></p>')
+          Path('_site/privacy-policy.html').write_text(privacy, encoding='utf-8')
+          Path('_site/delete-account.html').write_text(Path('legal/delete-account.html').read_text(encoding='utf-8'), encoding='utf-8')
+          home = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GK Swal Legal</title><style>body{font:16px/1.6 system-ui,sans-serif;max-width:760px;margin:3rem auto;padding:0 1rem;color:#172033}a{display:block;margin:1rem 0}</style></head><body><h1>GK Swal Legal Information</h1><a href="privacy-policy.html">Privacy Policy</a><a href="delete-account.html">Request account deletion</a></body></html>'
+          Path('_site/index.html').write_text(home, encoding='utf-8')
+          PY
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

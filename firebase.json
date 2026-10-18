@@ -1,0 +1,28 @@
+{
+  "firestore": [
+    {
+      "database": "ai-studio-android-gkswal-00669d47-2b46-46f6-b28a-6db36873372b",
+      "rules": "firestore.rules"
+    }
+  ],
+  "emulators": {
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8085
+    },
+    "auth": {
+      "host": "127.0.0.1",
+      "port": 9099
+    },
+    "ui": {
+      "enabled": false
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true
+    }
+  ]
+}

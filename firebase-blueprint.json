@@ -1,0 +1,178 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with display details and stats",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "role": { "type": "string", "enum": ["aspirant", "contributor", "admin"] },
+        "bio": { "type": "string" },
+        "followersCount": { "type": "integer" },
+        "followingCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "role", "createdAt"]
+    },
+    "SocialPost": {
+      "title": "SocialPost",
+      "description": "Text post or poll post in the GK community feed",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "type": { "type": "string", "enum": ["text", "poll"] },
+        "content": { "type": "string" },
+        "category": { "type": "string" },
+        "tags": { "type": "array" },
+        "likesCount": { "type": "integer" },
+        "commentsCount": { "type": "integer" },
+        "pollOptions": { "type": "array" },
+        "totalVotes": { "type": "integer" },
+        "allowVoteChange": { "type": "boolean" },
+        "isClosed": { "type": "boolean" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["postId", "authorId", "authorName", "type", "content", "category", "createdAt"]
+    },
+    "PollVote": {
+      "title": "PollVote",
+      "description": "User vote recorded on a poll post",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "optionIndex": { "type": "integer" },
+        "votedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "optionIndex", "votedAt"]
+    },
+    "PostLike": {
+      "title": "PostLike",
+      "description": "Like record on a post",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "createdAt"]
+    },
+    "PostComment": {
+      "title": "PostComment",
+      "description": "Comment or reply on a post",
+      "type": "object",
+      "properties": {
+        "commentId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "content": { "type": "string" },
+        "parentId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["commentId", "authorId", "authorName", "content", "createdAt"]
+    },
+    "UserFollower": {
+      "title": "UserFollower",
+      "description": "Follow relationship between users",
+      "type": "object",
+      "properties": {
+        "followerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["followerId", "createdAt"]
+    },
+    "ContentReport": {
+      "title": "ContentReport",
+      "description": "User report for moderation",
+      "type": "object",
+      "properties": {
+        "reportId": { "type": "string" },
+        "reporterId": { "type": "string" },
+        "targetType": { "type": "string", "enum": ["post", "comment", "user"] },
+        "targetId": { "type": "string" },
+        "reason": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["reportId", "reporterId", "targetType", "targetId", "reason", "createdAt"]
+    },
+    "LibraryQuestion": {
+      "title": "LibraryQuestion",
+      "description": "GK question for Lucent, Arihant, and Drishti resources",
+      "type": "object",
+      "properties": {
+        "questionId": { "type": "string" },
+        "bookSource": { "type": "string" },
+        "subject": { "type": "string" },
+        "chapter": { "type": "string" },
+        "examCategory": { "type": "string" },
+        "question": { "type": "string" },
+        "options": { "type": "array" },
+        "correctOptionIndex": { "type": "integer" },
+        "explanation": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
+        "licensingStatus": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["questionId", "bookSource", "subject", "chapter", "examCategory", "question", "options", "correctOptionIndex", "explanation", "difficulty", "licensingStatus", "createdAt"]
+    },
+    "UserQuizHistory": {
+      "title": "UserQuizHistory",
+      "description": "Practice quiz session history for a user",
+      "type": "object",
+      "properties": {
+        "historyId": { "type": "string" },
+        "bookSource": { "type": "string" },
+        "subject": { "type": "string" },
+        "totalQuestions": { "type": "integer" },
+        "correctCount": { "type": "integer" },
+        "completedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["historyId", "bookSource", "subject", "totalQuestions", "correctCount", "completedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document"
+    },
+    "/users/{userId}/followers/{followerId}": {
+      "schema": "UserFollower",
+      "description": "Followers of this user"
+    },
+    "/users/{userId}/quiz_history/{historyId}": {
+      "schema": "UserQuizHistory",
+      "description": "User practice quiz history"
+    },
+    "/posts/{postId}": {
+      "schema": "SocialPost",
+      "description": "Text posts and polls in the social feed"
+    },
+    "/posts/{postId}/votes/{voteUserId}": {
+      "schema": "PollVote",
+      "description": "Single vote per user on a poll post"
+    },
+    "/posts/{postId}/likes/{likeUserId}": {
+      "schema": "PostLike",
+      "description": "User like on a post"
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": "PostComment",
+      "description": "Comments and replies on a post"
+    },
+    "/reports/{reportId}": {
+      "schema": "ContentReport",
+      "description": "Content reports submitted for moderation"
+    },
+    "/library_questions/{questionId}": {
+      "schema": "LibraryQuestion",
+      "description": "Curated GK questions bank for Lucent, Arihant, and Drishti resources"
+    }
+  }
+}

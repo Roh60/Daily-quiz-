@@ -1,0 +1,251 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // A deletion job document is a durable lock. Admin SDK cleanup bypasses Rules;
+    // all client writes for that UID must stop once the lock exists.
+    function accountIsNotDeleting(uid) {
+      return isSignedIn() && !exists(/databases/$(database)/documents/account_deletions/$(uid));
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+             (!('photoUrl' in data) || data.photoUrl == null || (data.photoUrl is string && data.photoUrl.size() <= 500)) &&
+             data.role == 'aspirant' &&
+             (!('bio' in data) || data.bio == null || (data.bio is string && data.bio.size() <= 300)) &&
+             (!('followersCount' in data) || data.followersCount is int) &&
+             (!('followingCount' in data) || data.followingCount is int) &&
+             (!('targetExams' in data) || (data.targetExams is list && data.targetExams.size() <= 10));
+    }
+
+    function isValidSocialPost(data) {
+      return data.postId is string && data.postId.size() > 0 && data.postId.size() <= 128 &&
+             data.authorId is string && data.authorId == request.auth.uid &&
+             data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 60 &&
+             (!('authorRole' in data) || data.authorRole == 'aspirant') &&
+             data.type in ['text', 'poll'] &&
+             data.content is string && data.content.size() >= 1 && data.content.size() <= 1000 &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 50 &&
+             (!('tags' in data) || (data.tags is list && data.tags.size() <= 10)) &&
+             (!('likesCount' in data) || data.likesCount is int) &&
+             (!('commentsCount' in data) || data.commentsCount is int) &&
+             (!('pollOptions' in data) || (data.pollOptions is list && data.pollOptions.size() >= 2 && data.pollOptions.size() <= 4)) &&
+             (!('totalVotes' in data) || data.totalVotes is int && data.totalVotes >= 0) &&
+             (!('allowVoteChange' in data) || data.allowVoteChange is bool) &&
+             (!('isClosed' in data) || data.isClosed is bool) &&
+             (!('expiresAt' in data) || data.expiresAt == null || data.expiresAt is timestamp);
+    }
+
+    function hasZeroInitialCounters(data) {
+      return (!('likesCount' in data) || data.likesCount == 0) &&
+             (!('commentsCount' in data) || data.commentsCount == 0) &&
+             (!('totalVotes' in data) || data.totalVotes == 0);
+    }
+
+    function hasValidInitialPollOptions(data) {
+      return data.type != 'poll' ||
+        ('pollOptions' in data && data.pollOptions is list && data.pollOptions.size() >= 2 && data.pollOptions.size() <= 4 &&
+         data.pollOptions[0] is map && data.pollOptions[0].text is string && data.pollOptions[0].text.size() >= 1 && data.pollOptions[0].text.size() <= 120 && data.pollOptions[0].votes == 0 &&
+         data.pollOptions[1] is map && data.pollOptions[1].text is string && data.pollOptions[1].text.size() >= 1 && data.pollOptions[1].text.size() <= 120 && data.pollOptions[1].votes == 0 &&
+         (data.pollOptions.size() < 3 || (data.pollOptions[2] is map && data.pollOptions[2].text is string && data.pollOptions[2].text.size() >= 1 && data.pollOptions[2].text.size() <= 120 && data.pollOptions[2].votes == 0)) &&
+         (data.pollOptions.size() < 4 || (data.pollOptions[3] is map && data.pollOptions[3].text is string && data.pollOptions[3].text.size() >= 1 && data.pollOptions[3].text.size() <= 120 && data.pollOptions[3].votes == 0)));
+    }
+
+    function isValidPollVote(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.optionIndex is int && data.optionIndex >= 0 && data.optionIndex <= 3;
+    }
+
+    function isValidPostLike(data) {
+      return data.userId is string && data.userId == request.auth.uid;
+    }
+
+    function isValidPostComment(data) {
+      return data.commentId is string && data.commentId.size() > 0 &&
+             data.authorId is string && data.authorId == request.auth.uid &&
+             data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 60 &&
+             data.content is string && data.content.size() >= 1 && data.content.size() <= 500 &&
+             (!('parentId' in data) || data.parentId == null || (data.parentId is string && data.parentId.size() <= 128));
+    }
+
+    function isValidContentReport(data) {
+      return data.reportId is string && data.reportId.size() > 0 &&
+             data.reporterId is string && data.reporterId == request.auth.uid &&
+             data.targetType in ['post', 'comment', 'user'] &&
+             data.targetId is string && data.targetId.size() > 0 && data.targetId.size() <= 128 &&
+             data.reason is string && data.reason.size() >= 1 && data.reason.size() <= 100 &&
+             (!('notes' in data) || data.notes == null || (data.notes is string && data.notes.size() <= 500));
+    }
+
+    function isValidLibraryQuestion(data) {
+      return data.questionId is string &&
+             data.bookSource in ['Lucent GK', 'Arihant Publications', 'Drishti IAS'] &&
+             data.subject is string && data.subject.size() >= 1 &&
+             data.chapter is string && data.chapter.size() >= 1 &&
+             data.examCategory is string && data.examCategory.size() >= 1 &&
+             data.question is string && data.question.size() >= 5 &&
+             data.options is list && data.options.size() == 4 &&
+             data.correctOptionIndex is int && data.correctOptionIndex >= 0 && data.correctOptionIndex <= 3 &&
+             data.explanation is string &&
+             data.difficulty in ['Easy', 'Medium', 'Hard'] &&
+             data.licensingStatus is string;
+    }
+
+    // Wallet balances and transaction ledger are read-only to the owner. All writes use trusted Functions.
+    match /wallets/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow list, create, update, delete: if false;
+      match /transactions/{transactionId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+        allow create, update, delete: if false;
+      }
+    }
+
+    // Withdrawal requests are private to their owner; only Admin SDK Functions can change status.
+    match /withdrawal_requests/{requestId} {
+      allow get, list: if isSignedIn() && (resource.data.uid == request.auth.uid || request.auth.token.admin == true);
+      allow create, update, delete: if false;
+    }
+
+    // Practice reward claims are private to their owner and writable only by trusted Functions.
+    match /reward_claims/{claimId} {
+      allow get, list: if isSignedIn() && (resource.data.uid == request.auth.uid || request.auth.token.admin == true);
+      allow create, update, delete: if false;
+    }
+    match /reward_claim_daily/{dailyId} {
+      allow read, write: if false;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if accountIsNotDeleting(userId) && isValidId(userId) && request.auth.uid == userId &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time;
+      allow update: if accountIsNotDeleting(userId) && isValidId(userId) && request.auth.uid == userId &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoUrl', 'bio', 'targetExams', 'updatedAt']);
+      allow delete: if false; // Account deletion must go through the trusted callable function.
+
+      match /followers/{followerId} {
+        allow get, list: if isSignedIn();
+        // Follow edges and profile counters are maintained atomically by toggleFollowAuthor.
+        allow create, update, delete: if false;
+      }
+
+      match /following/{followingId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+        // Follow edges and profile counters are maintained atomically by toggleFollowAuthor.
+        allow create, update, delete: if false;
+      }
+
+      match /quiz_history/{historyId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+        allow create: if accountIsNotDeleting(userId) && request.auth.uid == userId && isValidId(historyId) &&
+                         incoming().completedAt is timestamp && incoming().completedAt <= request.time;
+        allow delete: if accountIsNotDeleting(userId) && request.auth.uid == userId && isValidId(historyId);
+      }
+    }
+
+    // Posts and Polls
+    match /posts/{postId} {
+      allow get, list: if isSignedIn();
+
+      allow create: if accountIsNotDeleting(request.auth.uid) && isValidId(postId) &&
+                       incoming().postId == postId &&
+                       incoming().authorId == request.auth.uid &&
+                       isValidSocialPost(incoming()) &&
+                       hasZeroInitialCounters(incoming()) &&
+                       hasValidInitialPollOptions(incoming()) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time;
+
+      allow update: if accountIsNotDeleting(request.auth.uid) && accountIsNotDeleting(existing().authorId) && isValidId(postId) &&
+        (!('deleting' in existing()) || existing().deleting != true) && (
+        (request.auth.uid == existing().authorId &&
+         incoming().authorId == existing().authorId &&
+         incoming().createdAt == existing().createdAt &&
+         isValidSocialPost(incoming()) &&
+         incoming().diff(existing()).affectedKeys().hasOnly(['content', 'category', 'tags', 'isClosed', 'updatedAt']))
+      );
+
+      allow delete: if false; // deleteMyPost recursively removes the post and all nested interactions.
+
+      match /votes/{voteUserId} {
+        // A user can read only their own vote document; aggregate poll counts live on the post.
+        allow get, list: if isSignedIn() && request.auth.uid == voteUserId;
+        // Vote writes are performed by authenticated callable functions using Admin SDK transactions.
+        allow create, update, delete: if false;
+      }
+
+      match /likes/{likeUserId} {
+        // A user can read only their own like document; public UI should use likesCount.
+        allow get, list: if isSignedIn() && request.auth.uid == likeUserId;
+        // Like writes and aggregate counts must be changed atomically by a callable function.
+        allow create, update, delete: if false;
+      }
+
+      match /comments/{commentId} {
+        allow get, list: if isSignedIn();
+        // Comment writes and counts are handled together by callable functions.
+        allow create, update, delete: if false;
+      }
+    }
+
+    // Content Reports
+    match /reports/{reportId} {
+      allow get: if isSignedIn() && (existing().reporterId == request.auth.uid || request.auth.token.admin == true);
+      allow list: if isSignedIn() && request.auth.token.admin == true;
+      // Report creation and moderation updates run only through authenticated callable Functions.
+      allow create, update, delete: if false;
+    }
+
+    // Server-only collections: answer keys, quiz sessions, referral rewards, and conversion controls.
+    // Client cannot read correct answers or mint reward/referral documents directly.
+    match /quiz_questions/{questionId} { allow read, write: if false; }
+    match /published_quizzes/{quizId} { allow read, write: if false; }
+    match /quiz_sessions/{sessionId} { allow read, write: if false; }
+    match /verified_quiz_reward_daily/{dailyId} { allow read, write: if false; }
+    match /referral_codes/{uid} { allow read, write: if false; }
+    match /referral_code_lookup/{code} { allow read, write: if false; }
+    match /referrals/{uid} {
+      allow get: if isSignedIn() && (request.auth.uid == uid || request.auth.token.admin == true);
+      allow list: if isSignedIn() && request.auth.token.admin == true;
+      allow create, update, delete: if false;
+    }
+
+    // GK Library Questions
+    match /library_questions/{questionId} {
+      allow get, list: if isSignedIn();
+      // Only trusted administrators with a server-assigned custom claim may publish question-bank content.
+      // Never trust a client-editable profile role for privileged access.
+      allow create, update: if isSignedIn() && request.auth.token.admin == true &&
+                               isValidId(questionId) && isValidLibraryQuestion(incoming());
+      allow delete: if isSignedIn() && request.auth.token.admin == true && isValidId(questionId);
+    }
+  }
+}
